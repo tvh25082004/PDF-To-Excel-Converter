@@ -2,10 +2,13 @@ services:
   - type: web
     name: pdf-to-excel-converter
     env: python
+    plan: free
+    region: singapore
     buildCommand: |
       apt-get update && apt-get install -y default-jre || true
+      pip install --upgrade pip
       pip install -r ConverterApp/requirements.txt
-    startCommand: cd ConverterApp && gunicorn pdftoexcel:app --bind 0.0.0.0:$PORT
+    startCommand: cd ConverterApp && gunicorn pdftoexcel:app --bind 0.0.0.0:$PORT --timeout 120 --workers 2
     envVars:
       - key: PYTHON_VERSION
         value: 3.11.0
