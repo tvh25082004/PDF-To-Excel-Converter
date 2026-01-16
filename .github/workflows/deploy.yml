@@ -1,0 +1,29 @@
+name: Deploy to Render
+
+on:
+  push:
+    branches:
+      - main
+  workflow_dispatch:
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v3
+      
+      - name: Setup Python
+        uses: actions/setup-python@v4
+        with:
+          python-version: '3.11'
+      
+      - name: Install dependencies
+        run: |
+          pip install -r ConverterApp/requirements.txt
+      
+      - name: Notify Render (Manual Deploy Required)
+        run: |
+          echo "Please deploy manually to Render via Dashboard"
+          echo "Repository is ready for deployment"
+          echo "Go to https://render.com and create a new Web Service"
+
