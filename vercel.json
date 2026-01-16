@@ -2,7 +2,7 @@
   "version": 2,
   "builds": [
     {
-      "src": "ConverterApp/pdftoexcel.py",
+      "src": "api/index.py",
       "use": "@vercel/python"
     }
   ],
@@ -13,16 +13,17 @@
     },
     {
       "src": "/(.*)",
-      "dest": "/ConverterApp/pdftoexcel.py"
+      "dest": "/api/index.py"
     }
   ],
   "env": {
-    "PYTHONPATH": "ConverterApp",
+    "PYTHONPATH": ".",
     "VERCEL": "1"
   },
   "functions": {
-    "ConverterApp/pdftoexcel.py": {
-      "maxDuration": 60
+    "api/index.py": {
+      "maxDuration": 60,
+      "memory": 3008
     }
   }
 }

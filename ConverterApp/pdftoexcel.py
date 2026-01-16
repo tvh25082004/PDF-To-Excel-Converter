@@ -1,5 +1,10 @@
 import pdfplumber
-import tabula
+try:
+    import tabula
+    TABULA_AVAILABLE = True
+except ImportError:
+    TABULA_AVAILABLE = False
+    print("Warning: tabula-py không khả dụng (cần Java). Chỉ sử dụng pdfplumber.")
 from openpyxl.utils import get_column_letter
 from werkzeug.utils import secure_filename
 import os
@@ -29,13 +34,40 @@ def allowed_file(filename):
 def extract_tables_from_pdf(pdf_path):
     """
     Extract tables from all pages of a PDF file using tabula-py.
+    Fallback to pdfplumber nếu tabula-py không khả dụng.
     """
+    if not TABULA_AVAILABLE:
+        # Fallback: sử dụng pdfplumber để extract tables
+        all_tables = []
+        with pdfplumber.open(pdf_path) as pdf:
+            for page in pdf.pages:
+                tables = page.extract_tables()
+                if tables:
+                    # Convert sang DataFrame format tương tự tabula
+                    for table in tables:
+                        if table and len(table) > 0:
+                            df = pd.DataFrame(table[1:], columns=table[0] if len(table) > 1 else None)
+                            all_tables.append(df)
+        return all_tables
+    
     all_tables = []
     with fitz.open(pdf_path) as doc:
         for page_num in range(len(doc)):
-            tables = tabula.read_pdf(pdf_path, pages=page_num + 1, multiple_tables=True)
-            if tables:
-                all_tables.extend(tables)
+            try:
+                tables = tabula.read_pdf(pdf_path, pages=page_num + 1, multiple_tables=True)
+                if tables:
+                    all_tables.extend(tables)
+            except Exception as e:
+                print(f"Lỗi khi extract table từ page {page_num + 1}: {e}")
+                # Fallback to pdfplumber cho page này
+                with pdfplumber.open(pdf_path) as pdf:
+                    if page_num < len(pdf.pages):
+                        tables = pdf.pages[page_num].extract_tables()
+                        if tables:
+                            for table in tables:
+                                if table and len(table) > 0:
+                                    df = pd.DataFrame(table[1:], columns=table[0] if len(table) > 1 else None)
+                                    all_tables.append(df)
     return all_tables
 def extract_pdf_content(pdf_file):
     text_content = ""
