@@ -1,0 +1,17 @@
+services:
+  - type: web
+    name: pdf-to-excel-converter
+    env: python
+    buildCommand: |
+      apt-get update && apt-get install -y default-jre || true
+      pip install -r ConverterApp/requirements.txt
+    startCommand: cd ConverterApp && gunicorn pdftoexcel:app --bind 0.0.0.0:$PORT
+    envVars:
+      - key: PYTHON_VERSION
+        value: 3.11.0
+      - key: PORT
+        value: 10000
+      - key: RENDER
+        value: "1"
+    healthCheckPath: /
+

@@ -11,18 +11,14 @@ import pandas as pd
 import tempfile
 
 # Xác định đường dẫn templates và static dựa trên môi trường
-if os.path.exists('templates'):
-    template_folder = 'templates'
-    static_folder = 'static'
-else:
-    # Cho Vercel deployment
-    template_folder = os.path.join(os.path.dirname(__file__), 'templates')
-    static_folder = os.path.join(os.path.dirname(__file__), 'static')
+base_dir = os.path.dirname(os.path.abspath(__file__))
+template_folder = os.path.join(base_dir, 'templates')
+static_folder = os.path.join(base_dir, 'static')
 
 app = Flask(__name__, template_folder=template_folder, static_folder=static_folder)
 
-# Sử dụng thư mục tạm cho uploads trên Vercel
-UPLOAD_FOLDER = tempfile.gettempdir() if os.environ.get('VERCEL') else 'uploads'
+# Sử dụng thư mục tạm cho uploads trên cloud platforms
+UPLOAD_FOLDER = tempfile.gettempdir() if os.environ.get('RENDER') or os.environ.get('VERCEL') else 'uploads'
 ALLOWED_EXTENSIONS = {'pdf'}
 app.config['UPLOAD_FOLDER'] = UPLOAD_FOLDER
 app.config['MAX_CONTENT_LENGTH'] = 50 * 1024 * 1024  # 50MB max file size
