@@ -8,12 +8,24 @@ from openpyxl import Workbook
 from openpyxl.styles import Font, Alignment, PatternFill
 import fitz
 import pandas as pd
+import tempfile
 
-app = Flask(__name__, template_folder='templates')
+# Xác định đường dẫn templates và static dựa trên môi trường
+if os.path.exists('templates'):
+    template_folder = 'templates'
+    static_folder = 'static'
+else:
+    # Cho Vercel deployment
+    template_folder = os.path.join(os.path.dirname(__file__), 'templates')
+    static_folder = os.path.join(os.path.dirname(__file__), 'static')
 
-UPLOAD_FOLDER = 'uploads'
+app = Flask(__name__, template_folder=template_folder, static_folder=static_folder)
+
+# Sử dụng thư mục tạm cho uploads trên Vercel
+UPLOAD_FOLDER = tempfile.gettempdir() if os.environ.get('VERCEL') else 'uploads'
 ALLOWED_EXTENSIONS = {'pdf'}
 app.config['UPLOAD_FOLDER'] = UPLOAD_FOLDER
+app.config['MAX_CONTENT_LENGTH'] = 50 * 1024 * 1024  # 50MB max file size
 
 def allowed_file(filename):
     return '.' in filename and filename.rsplit('.', 1)[1].lower() in ALLOWED_EXTENSIONS
@@ -168,18 +180,21 @@ def upload():
         processing_option = request.form.get('processingOption')
 
         if processing_option == 'allText':
-            text_content, table_data = extract_pdf_content(file)
+            text_content, table_data = extract_pdf_content(filepath)
             excel_file = create_excel(text_content, table_data)
-            excel_file_path = 'output.xlsx'
+            excel_file_path = os.path.join(tempfile.gettempdir(), f'output_{filename}.xlsx')
             excel_file.save(excel_file_path)
-            return send_file(excel_file_path, as_attachment=True)
+            response = send_file(excel_file_path, as_attachment=True, download_name='output.xlsx')
+            delete_files(filepath, excel_file_path)
+            return response
         elif processing_option == 'tablesOnly':
             tables = extract_tables_from_pdf(filepath)
             if tables:
-                excel_path = os.path.join(app.config['UPLOAD_FOLDER'], 'TablesOnly.xlsx')
+                excel_path = os.path.join(tempfile.gettempdir(), f'TablesOnly_{filename}.xlsx')
                 write_tables_to_excel(tables, excel_path)
-                delete_files(filepath)
-                return send_file_and_delete(excel_path)
+                response = send_file(excel_path, as_attachment=True, download_name='TablesOnly.xlsx')
+                delete_files(filepath, excel_path)
+                return response
             else:
                 delete_files(filepath)
                 return 'No tables found in the PDF.'
@@ -190,5 +205,8 @@ def upload():
     return 'Invalid file. Please upload a PDF file.'
 
 
+# Export handler cho Vercel
+handler = app
+
 if __name__ == "__main__":
-    app.run(debug=True)
+    app.run(debug=True, port=8080)

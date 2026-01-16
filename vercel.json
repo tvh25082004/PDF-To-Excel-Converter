@@ -1,0 +1,29 @@
+{
+  "version": 2,
+  "builds": [
+    {
+      "src": "ConverterApp/pdftoexcel.py",
+      "use": "@vercel/python"
+    }
+  ],
+  "routes": [
+    {
+      "src": "/static/(.*)",
+      "dest": "/ConverterApp/static/$1"
+    },
+    {
+      "src": "/(.*)",
+      "dest": "/ConverterApp/pdftoexcel.py"
+    }
+  ],
+  "env": {
+    "PYTHONPATH": "ConverterApp",
+    "VERCEL": "1"
+  },
+  "functions": {
+    "ConverterApp/pdftoexcel.py": {
+      "maxDuration": 60
+    }
+  }
+}
+
